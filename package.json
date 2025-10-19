@@ -1,0 +1,24 @@
+{
+  "name": "shiftmind-monorepo",
+  "version": "1.0.0",
+  "description": "ShiftMind monorepo with React frontend, FastAPI backend, and AI capabilities",
+  "scripts": {
+    "dev": "docker-compose up",
+    "dev:app": "cd app && npm run dev",
+    "dev:api": "cd api && uvicorn main:app --reload",
+    "build:app": "cd app && npm run build",
+    "install:app": "cd app && npm install",
+    "install:ai": "cd ai && pip install -e .",
+    "setup": "npm run install:app && npm run install:ai",
+    "lint": "cd app && npm run lint",
+    "clean": "docker-compose down && docker system prune -f"
+  },
+  "workspaces": [
+    "app"
+  ],
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

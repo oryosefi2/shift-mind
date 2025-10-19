@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - shiftmind-network
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8084:8000"
+    volumes:
+      - ./api:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENV=development
+    networks:
+      - shiftmind-network
+
+networks:
+  shiftmind-network:
+    driver: bridge
