@@ -28,6 +28,11 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - ENV=development
+      - POSTGRES_HOST=host.docker.internal
+      - POSTGRES_PORT=5431
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=shiftmind_test
     networks:
       - shiftmind-network
 

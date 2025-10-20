@@ -1,24 +1,34 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Layout from './components/Layout.tsx'
-
 function App() {
+  console.log('App component is rendering...')
+  
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                ברוכים הבאים ל-ShiftMind
-              </h1>
-              <p className="text-xl text-gray-600">
-                פלטפורמה מתקדמת עם AI
-              </p>
-            </div>
-          } />
-        </Routes>
-      </Layout>
-    </Router>
+    <div style={{ 
+      padding: '20px', 
+      backgroundColor: 'lightblue', 
+      minHeight: '100vh',
+      direction: 'rtl',
+      color: 'black',
+      fontSize: '20px'
+    }}>
+      <h1 style={{ 
+        color: 'red', 
+        fontSize: '32px',
+        marginBottom: '20px'
+      }}>
+        🎉 ShiftMind עובד! 🎉
+      </h1>
+      <p style={{ 
+        backgroundColor: 'yellow', 
+        padding: '10px',
+        border: '3px solid green',
+        marginBottom: '10px'
+      }}>
+        זהו הדף הראשי של ShiftMind
+      </p>
+      <p>
+        אם אתם רואים את הטקסט הזה, האפליקציה פועלת כהלכה!
+      </p>
+    </div>
   )
 }
 

@@ -10,11 +10,14 @@ function Navbar() {
             <a href="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
               בית
             </a>
-            <a href="/about" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
-              אודות
+            <a href="/businesses" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
+              עסקים
             </a>
-            <a href="/contact" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
-              צור קשר
+            <a href="/employees" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
+              עובדים
+            </a>
+            <a href="/schedules" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
+              משמרות
             </a>
           </div>
         </div>
