@@ -1,3 +1,5 @@
+-- Copilot: enable row level security and sample policy per table using auth.jwt() ->> 'business_id'
+
 -- Migration: Create ShiftMind core tables with RLS
 -- Created: 2025-10-19
 -- Updated: 2025-10-19
