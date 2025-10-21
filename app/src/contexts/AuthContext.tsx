@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  businessId: string | null;
   signIn: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -88,6 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user: session?.user || null,
     session,
     loading,
+    businessId: session?.user?.business_id || null,
     signIn,
     signOut
   };

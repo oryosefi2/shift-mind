@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Business {
@@ -17,12 +18,19 @@ interface Employee {
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8084';
 
 export function Home() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, businessId: authBusinessId } = useAuth();
   const [businessName, setBusinessName] = useState<string>('');
-  const [businessId, setBusinessId] = useState<string>(user?.business_id || '11111111-1111-1111-1111-111111111111');
+  const [businessId, setBusinessId] = useState<string>(authBusinessId || user?.business_id || '11111111-1111-1111-1111-111111111111');
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+
+  // Sync auth businessId with local state
+  useEffect(() => {
+    if (authBusinessId) {
+      setBusinessId(authBusinessId);
+    }
+  }, [authBusinessId]);
 
   // Fetch business name on component mount
   useEffect(() => {
@@ -85,6 +93,56 @@ export function Home() {
           </button>
         </div>
 
+        {/* Navigation Menu */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">תפריט ראשי</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link
+              to="/settings/business"
+              className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
+            >
+              <div className="text-center">
+                <div className="text-2xl mb-2">⚙️</div>
+                <div className="font-medium text-gray-900">הגדרות עסק</div>
+                <div className="text-sm text-gray-500">ניהול הגדרות כלליות</div>
+              </div>
+            </Link>
+
+            <Link
+              to="/employees"
+              className="p-4 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-colors"
+            >
+              <div className="text-center">
+                <div className="text-2xl mb-2">👥</div>
+                <div className="font-medium text-gray-900">עובדים</div>
+                <div className="text-sm text-gray-500">ניהול רשימת עובדים</div>
+              </div>
+            </Link>
+
+            <Link
+              to="/availability"
+              className="p-4 border border-gray-200 rounded-lg hover:bg-yellow-50 hover:border-yellow-300 transition-colors"
+            >
+              <div className="text-center">
+                <div className="text-2xl mb-2">📅</div>
+                <div className="font-medium text-gray-900">זמינות</div>
+                <div className="text-sm text-gray-500">הגדרת זמינות עובדים</div>
+              </div>
+            </Link>
+
+            <Link
+              to="/budgets"
+              className="p-4 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-colors"
+            >
+              <div className="text-center">
+                <div className="text-2xl mb-2">💰</div>
+                <div className="font-medium text-gray-900">תקציבים</div>
+                <div className="text-sm text-gray-500">ניהול תקציבי עבודה</div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
         {/* User Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <h2 className="text-lg font-semibold text-blue-900 mb-2">פרטי משתמש</h2>
@@ -95,7 +153,7 @@ export function Home() {
             </div>
             <div>
               <span className="font-medium text-blue-800">מזהה עסק: </span>
-              <span className="text-blue-700 font-mono">{user?.business_id || businessId}</span>
+              <span className="text-blue-700 font-mono">{authBusinessId || user?.business_id || businessId}</span>
             </div>
           </div>
         </div>

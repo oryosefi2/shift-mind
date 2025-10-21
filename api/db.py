@@ -80,5 +80,21 @@ class Database:
                 for row in rows
             ]
 
+    async def fetch_all(self, query: str, *args):
+        """Execute a SELECT query and return all rows"""
+        if not self.pool:
+            raise Exception("Database connection not available")
+            
+        async with self.pool.acquire() as conn:
+            return await conn.fetch(query, *args)
+
+    async def fetch_one(self, query: str, *args):
+        """Execute a query and return one row"""
+        if not self.pool:
+            raise Exception("Database connection not available")
+            
+        async with self.pool.acquire() as conn:
+            return await conn.fetchrow(query, *args)
+
 # Global database instance
 db = Database()
