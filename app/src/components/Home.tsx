@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Business {
   id: string;
@@ -16,8 +17,9 @@ interface Employee {
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8084';
 
 export function Home() {
+  const { user, signOut } = useAuth();
   const [businessName, setBusinessName] = useState<string>('');
-  const [businessId, setBusinessId] = useState<string>('11111111-1111-1111-1111-111111111111');
+  const [businessId, setBusinessId] = useState<string>(user?.business_id || '11111111-1111-1111-1111-111111111111');
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -71,9 +73,32 @@ export function Home() {
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-          ברוכים הבאים ל-ShiftMind
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">
+            ברוכים הבאים ל-ShiftMind
+          </h1>
+          <button
+            onClick={() => signOut()}
+            className="px-4 py-2 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+          >
+            התנתק
+          </button>
+        </div>
+
+        {/* User Info */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h2 className="text-lg font-semibold text-blue-900 mb-2">פרטי משתמש</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium text-blue-800">אימייל: </span>
+              <span className="text-blue-700">{user?.email || 'לא זמין'}</span>
+            </div>
+            <div>
+              <span className="font-medium text-blue-800">מזהה עסק: </span>
+              <span className="text-blue-700 font-mono">{user?.business_id || businessId}</span>
+            </div>
+          </div>
+        </div>
         
         {/* Business Name Display */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
