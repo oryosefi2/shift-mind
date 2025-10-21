@@ -64,7 +64,7 @@ class Database:
                 """
                 SELECT id, first_name, last_name, email, hourly_rate 
                 FROM employees 
-                WHERE business_id = $1 AND status = 'active'
+                WHERE business_id = $1
                 ORDER BY first_name, last_name
                 """,
                 business_id
