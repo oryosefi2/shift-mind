@@ -60,7 +60,11 @@ yarn-error.log*
 
 # Docker
 docker-compose.override.yml
+.docker/
 
 # Supabase
 supabase/.branches
 supabase/.temp
+supabase/volumes/db/data/
+supabase/volumes/
+.supabase
