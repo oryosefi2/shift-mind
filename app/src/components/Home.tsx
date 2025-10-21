@@ -151,6 +151,17 @@ export function Home() {
                 <div className="text-sm text-gray-500">יצירת סידור משמרות</div>
               </div>
             </Link>
+
+            <Link
+              to="/seasonal-profiles"
+              className="p-4 border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-colors"
+            >
+              <div className="text-center">
+                <div className="text-2xl mb-2">📈</div>
+                <div className="font-medium text-gray-900">פרופילי עונתיות</div>
+                <div className="text-sm text-gray-500">ניהול מכפילי ביקוש</div>
+              </div>
+            </Link>
           </div>
         </div>
 

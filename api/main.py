@@ -11,6 +11,7 @@ from db import db
 
 # Import routes
 from routes.schedule import router as schedule_router
+from routes.calendar import router as calendar_router
 
 # Load environment variables
 load_dotenv()
@@ -133,6 +134,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(schedule_router, prefix="/api", tags=["schedule"])
+app.include_router(calendar_router, prefix="/api", tags=["calendar"])
 
 @app.get("/health")
 async def health_check():

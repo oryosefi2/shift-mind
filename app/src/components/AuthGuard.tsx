@@ -9,6 +9,9 @@ interface AuthGuardProps {
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { user, loading } = useAuth();
 
+  // Debug: Auth state
+  // console.log('AuthGuard - user:', user, 'loading:', loading);
+
   if (loading) {
     return (
       <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">

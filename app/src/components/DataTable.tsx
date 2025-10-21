@@ -40,6 +40,7 @@ export function DataTable<T extends { id: string | number }>({
 
   // Filter data based on search
   const filteredData = useMemo(() => {
+    if (!data || !Array.isArray(data)) return [];
     if (!search.trim()) return data;
     
     const searchLower = search.toLowerCase();
@@ -60,6 +61,7 @@ export function DataTable<T extends { id: string | number }>({
 
   // Sort data
   const sortedData = useMemo(() => {
+    if (!Array.isArray(filteredData)) return [];
     if (!sortKey) return filteredData;
     
     return [...filteredData].sort((a, b) => {
@@ -76,11 +78,12 @@ export function DataTable<T extends { id: string | number }>({
 
   // Paginate data
   const paginatedData = useMemo(() => {
+    if (!Array.isArray(sortedData)) return [];
     const startIndex = (currentPage - 1) * pageSize;
     return sortedData.slice(startIndex, startIndex + pageSize);
   }, [sortedData, currentPage, pageSize]);
 
-  const totalPages = Math.ceil(sortedData.length / pageSize);
+  const totalPages = Math.ceil((sortedData?.length || 0) / pageSize);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -141,10 +144,10 @@ export function DataTable<T extends { id: string | number }>({
                     } ${column.className || ''}`}
                     onClick={() => column.sortable && handleSort(String(column.key))}
                   >
-                    <div className="flex items-center justify-end space-x-1">
+                    <div className="text-right">
                       <span>{column.header}</span>
                       {column.sortable && sortKey === String(column.key) && (
-                        <span className="text-blue-600">
+                        <span className="text-blue-600 mr-1">
                           {sortDirection === 'asc' ? '↑' : '↓'}
                         </span>
                       )}
@@ -153,31 +156,31 @@ export function DataTable<T extends { id: string | number }>({
                 ))}
                 {(onEdit || onDelete) && (
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    פעולות
+                    <div className="text-right">פעולות</div>
                   </th>
                 )}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedData.map((item) => (
+              {paginatedData.filter(item => item != null).map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50">
                   {columns.map((column) => (
                     <td
                       key={String(column.key)}
                       className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right ${column.className || ''}`}
                     >
-                      {column.render 
+                      {column.render && item
                         ? column.render(item[column.key as keyof T], item)
-                        : String(item[column.key as keyof T] || '')}
+                        : String((item && item[column.key as keyof T]) || '')}
                     </td>
                   ))}
                   {(onEdit || onDelete) && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
-                      <div className="flex space-x-2 justify-end">
+                      <div className="text-right">
                         {onEdit && (
                           <button
                             onClick={() => onEdit(item)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-blue-600 hover:text-blue-900 ml-2"
                           >
                             ערוך
                           </button>

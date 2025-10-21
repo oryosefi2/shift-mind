@@ -15,6 +15,12 @@ class Database:
         max_retries = 5
         retry_delay = 2
         
+        # Debug environment variables
+        db_name = os.getenv("POSTGRES_DB", "postgres")
+        print(f"Connecting to database: {db_name}")
+        print(f"Host: {os.getenv('POSTGRES_HOST', 'localhost')}")
+        print(f"Port: {os.getenv('POSTGRES_PORT', '5431')}")
+        
         for attempt in range(max_retries):
             try:
                 self.pool = await asyncpg.create_pool(
@@ -22,7 +28,7 @@ class Database:
                     port=int(os.getenv("POSTGRES_PORT", "5431")),
                     user=os.getenv("POSTGRES_USER", "postgres"),
                     password=os.getenv("POSTGRES_PASSWORD", "postgres"),
-                    database=os.getenv("POSTGRES_DB", "shiftmind_test"),
+                    database=db_name,
                     min_size=1,
                     max_size=10
                 )
