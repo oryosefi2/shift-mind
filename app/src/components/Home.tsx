@@ -96,7 +96,7 @@ export function Home() {
         {/* Navigation Menu */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">תפריט ראשי</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Link
               to="/settings/business"
               className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
@@ -138,6 +138,17 @@ export function Home() {
                 <div className="text-2xl mb-2">💰</div>
                 <div className="font-medium text-gray-900">תקציבים</div>
                 <div className="text-sm text-gray-500">ניהול תקציבי עבודה</div>
+              </div>
+            </Link>
+
+            <Link
+              to="/schedule"
+              className="p-4 border border-gray-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition-colors"
+            >
+              <div className="text-center">
+                <div className="text-2xl mb-2">🗓️</div>
+                <div className="font-medium text-gray-900">תזמון</div>
+                <div className="text-sm text-gray-500">יצירת סידור משמרות</div>
               </div>
             </Link>
           </div>

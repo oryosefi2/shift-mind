@@ -9,6 +9,10 @@ from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from db import db
 
+# Import routes
+from routes.schedule import router as schedule_router
+
+# Load environment variables
 load_dotenv()
 
 # Pydantic models
@@ -126,6 +130,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(schedule_router, prefix="/api", tags=["schedule"])
 
 @app.get("/health")
 async def health_check():

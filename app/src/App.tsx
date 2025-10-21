@@ -9,6 +9,7 @@ import BusinessSettings from "./pages/BusinessSettings";
 import Employees from "./pages/Employees";
 import Availability from "./pages/Availability";
 import Budgets from "./pages/Budgets";
+import { Schedule } from "./pages/Schedule";
 
 function App() {
   return (
@@ -54,6 +55,14 @@ function App() {
               element={
                 <AuthGuard>
                   <Budgets />
+                </AuthGuard>
+              } 
+            />
+            <Route 
+              path="/schedule" 
+              element={
+                <AuthGuard>
+                  <Schedule />
                 </AuthGuard>
               } 
             />
