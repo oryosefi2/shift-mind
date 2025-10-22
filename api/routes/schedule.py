@@ -183,6 +183,18 @@ async def generate_schedule(
             min_staff_per_hour=request.min_staff_per_hour
         )
         
+        # Try to load forecast data
+        forecast_loaded = await generator.load_forecast(business_id, week)
+        
+        if not forecast_loaded:
+            # Add alert about missing forecast
+            generator.alerts.append(Alert(
+                type="no_forecast_fallback",
+                severity="warning", 
+                message=f"לא נמצאה תחזית לשבוע {week}, משתמש בהערכה בסיסית",
+                details={"week": week, "fallback_method": "basic_demand_pattern"}
+            ))
+        
         # Generate schedule
         shifts, alerts = generator.generate_schedule(
             employees=employees,

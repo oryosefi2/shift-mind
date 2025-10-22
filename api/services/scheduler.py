@@ -46,6 +46,7 @@ class ScheduleGenerator:
         self.min_staff_per_hour = min_staff_per_hour
         self.current_cost = 0.0
         self.alerts = []
+        self.forecast_cache = {}  # Cache for loaded forecasts
         
     def demand_to_staff(self, hour: int, day: int, forecast_data: Optional[Dict] = None) -> int:
         """
@@ -68,6 +69,145 @@ class ScheduleGenerator:
             return max(1, self.min_staff_per_hour)
         else:
             return 0  # Closed hours
+    
+    async def load_forecast(self, business_id: str, week: str) -> bool:
+        """
+        טוען תחזית ביקוש מה-cache לשבוע מסוים
+        
+        Args:
+            business_id: מזהה עסק
+            week: שבוע בפורמט YYYY-WW
+            
+        Returns:
+            bool: האם הטעינה הצליחה
+        """
+        from db import db  # Import here to avoid circular imports
+        
+        cache_key = f"forecast_{business_id}_{week}_lb8"
+        
+        try:
+            # שאילתא לטעינת תחזיות מה-cache
+            query = """
+            SELECT forecast_date, hour_of_day, forecasted_demand, confidence_score
+            FROM forecast_cache
+            WHERE business_id = %s AND cache_key = %s AND expires_at > NOW()
+            ORDER BY forecast_date, hour_of_day
+            """
+            
+            cursor = db.cursor()
+            cursor.execute(query, (business_id, cache_key))
+            results = cursor.fetchall()
+            
+            if not results:
+                self.alerts.append(Alert(
+                    type="missing_forecast",
+                    severity="warning", 
+                    message=f"לא נמצאה תחזית לשבוע {week}",
+                    details={"week": week, "business_id": business_id}
+                ))
+                return False
+            
+            # המרת תוצאות לפורמט נוח
+            self.forecast_cache[week] = {}
+            
+            for row in results:
+                forecast_date, hour_of_day, forecasted_demand, confidence_score = row
+                day_key = forecast_date.strftime("%Y-%m-%d")
+                
+                if day_key not in self.forecast_cache[week]:
+                    self.forecast_cache[week][day_key] = {}
+                
+                self.forecast_cache[week][day_key][hour_of_day] = {
+                    "demand": float(forecasted_demand),
+                    "confidence": float(confidence_score)
+                }
+            
+            forecast_count = len(results)
+            avg_confidence = sum(float(row[3]) for row in results) / forecast_count if results else 0
+            
+            self.alerts.append(Alert(
+                type="forecast_loaded",
+                severity="info",
+                message=f"תחזית נטענה בהצלחה לשבוע {week}",
+                details={
+                    "forecasts_count": forecast_count,
+                    "average_confidence": round(avg_confidence, 3),
+                    "week": week
+                }
+            ))
+            
+            return True
+            
+        except Exception as e:
+            self.alerts.append(Alert(
+                type="forecast_error",
+                severity="warning",
+                message=f"שגיאה בטעינת תחזית: {str(e)}",
+                details={"week": week, "error": str(e)}
+            ))
+            return False
+    
+    def demand_to_staff_with_forecast(self, target_date: str, hour: int, settings: Optional[Dict] = None) -> int:
+        """
+        המרת ביקוש חזוי למספר עובדים נדרש
+        
+        Args:
+            target_date: תאריך בפורמט YYYY-MM-DD
+            hour: שעה (0-23)
+            settings: הגדרות המרה מ-businesses.settings
+            
+        Returns:
+            int: מספר עובדים נדרש
+        """
+        
+        # ברירות מחדל להגדרות המרה
+        default_settings = {
+            "demand_per_staff": 15.0,  # יחידות ביקוש לעובד
+            "min_staff_per_hour": 1,
+            "max_staff_per_hour": 5,
+            "confidence_threshold": 0.7  # סף ביטחון מינימלי
+        }
+        
+        if settings:
+            default_settings.update(settings)
+        
+        # חיפוש תחזית בcache
+        week = None
+        for cached_week, week_data in self.forecast_cache.items():
+            if target_date in week_data:
+                week = cached_week
+                break
+        
+        if week and target_date in self.forecast_cache[week]:
+            hour_data = self.forecast_cache[week][target_date].get(hour)
+            
+            if hour_data:
+                demand = hour_data["demand"]
+                confidence = hour_data["confidence"]
+                
+                # בדיקת סף ביטחון
+                if confidence >= default_settings["confidence_threshold"]:
+                    # המרה ליניארית של ביקוש לעובדים
+                    required_staff = max(
+                        default_settings["min_staff_per_hour"],
+                        int(demand / default_settings["demand_per_staff"])
+                    )
+                    
+                    # הגבלה למקסימום
+                    required_staff = min(required_staff, default_settings["max_staff_per_hour"])
+                    
+                    return required_staff
+                else:
+                    # ביטחון נמוך - שימוש בfallback
+                    self.alerts.append(Alert(
+                        type="low_confidence_forecast",
+                        severity="warning",
+                        message=f"ביטחון נמוך בתחזית ({confidence:.2f}) עבור {target_date} שעה {hour}",
+                        details={"date": target_date, "hour": hour, "confidence": confidence}
+                    ))
+        
+        # Fallback: שימוש בלוגיקה הקודמת
+        return self.demand_to_staff(hour, datetime.strptime(target_date, "%Y-%m-%d").weekday(), None)
     
     def pick_employees_greedy(self, 
                             available_employees: List[Employee],
@@ -144,30 +284,36 @@ class ScheduleGenerator:
             for day, day_hours in hours_by_day.items():
                 day_hours.sort()
                 
-                # Merge contiguous hours into shifts
-                current_shift_start = None
-                current_shift_hours = []
+                # Create longer continuous shifts by filling gaps up to 3 hours
+                if not day_hours:
+                    continue
+                    
+                # Sort hours and create continuous ranges
+                day_hours.sort()
+                continuous_ranges = []
+                current_range = [day_hours[0]]
                 
-                for hour in day_hours:
-                    if current_shift_start is None:
-                        current_shift_start = hour
-                        current_shift_hours = [hour]
-                    elif hour == current_shift_hours[-1] + 1:
-                        # Contiguous hour
-                        current_shift_hours.append(hour)
+                for hour in day_hours[1:]:
+                    # If gap is 3 hours or less, extend current range
+                    if hour <= current_range[-1] + 4:  # Allow gaps up to 3 hours
+                        # Fill in the gap
+                        for fill_hour in range(current_range[-1] + 1, hour + 1):
+                            if fill_hour not in current_range:
+                                current_range.append(fill_hour)
                     else:
-                        # Gap found, create shift from previous hours
-                        shift = self._create_shift(emp_id, day, current_shift_start, current_shift_hours, employee)
-                        shifts.append(shift)
-                        
-                        # Start new shift
-                        current_shift_start = hour
-                        current_shift_hours = [hour]
+                        # Gap too large, start new range
+                        continuous_ranges.append(current_range)
+                        current_range = [hour]
                 
-                # Create final shift for the day
-                if current_shift_hours:
-                    shift = self._create_shift(emp_id, day, current_shift_start, current_shift_hours, employee)
-                    shifts.append(shift)
+                # Add final range
+                if current_range:
+                    continuous_ranges.append(current_range)
+                
+                # Create shifts from continuous ranges
+                for hours_range in continuous_ranges:
+                    if len(hours_range) >= 1:  # Minimum shift length
+                        shift = self._create_shift(emp_id, day, hours_range[0], hours_range, employee)
+                        shifts.append(shift)
         
         return shifts
     

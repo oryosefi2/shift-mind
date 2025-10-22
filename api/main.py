@@ -12,6 +12,8 @@ from db import db
 # Import routes
 from routes.schedule import router as schedule_router
 from routes.calendar import router as calendar_router
+from routes.forecast import router as forecast_router
+from routes.employees import router as employees_router
 
 # Load environment variables
 load_dotenv()
@@ -135,6 +137,8 @@ app.add_middleware(
 # Include routers
 app.include_router(schedule_router, prefix="/api", tags=["schedule"])
 app.include_router(calendar_router, prefix="/api", tags=["calendar"])
+app.include_router(forecast_router, prefix="/api/forecast", tags=["forecast"])
+app.include_router(employees_router, prefix="/api", tags=["employees"])
 
 @app.get("/health")
 async def health_check():
@@ -271,10 +275,14 @@ async def create_availability(availability: AvailabilityCreate, business_id: str
                      start_time::text, end_time::text, is_available,
                      effective_from, effective_until, created_at, updated_at
         """
+        # Parse string times to time objects
+        start_time = datetime.strptime(availability.start_time, '%H:%M:%S').time() if ':' in availability.start_time and availability.start_time.count(':') == 2 else datetime.strptime(availability.start_time, '%H:%M').time()
+        end_time = datetime.strptime(availability.end_time, '%H:%M:%S').time() if ':' in availability.end_time and availability.end_time.count(':') == 2 else datetime.strptime(availability.end_time, '%H:%M').time()
+        
         row = await db.fetch_one(
             query, 
             availability_id, business_id, availability.employee_id, availability.day_of_week,
-            availability.start_time, availability.end_time, availability.is_available,
+            start_time, end_time, availability.is_available,
             availability.effective_from, availability.effective_until, now, now
         )
         return Availability(
@@ -309,12 +317,16 @@ async def update_availability(availability_id: str, availability: AvailabilityUp
             
         if availability.start_time is not None:
             update_fields.append(f"start_time = ${param_count}")
-            values.append(availability.start_time)
+            # Parse string time to time object
+            start_time = datetime.strptime(availability.start_time, '%H:%M:%S').time() if ':' in availability.start_time and availability.start_time.count(':') == 2 else datetime.strptime(availability.start_time, '%H:%M').time()
+            values.append(start_time)
             param_count += 1
             
         if availability.end_time is not None:
             update_fields.append(f"end_time = ${param_count}")
-            values.append(availability.end_time)
+            # Parse string time to time object
+            end_time = datetime.strptime(availability.end_time, '%H:%M:%S').time() if ':' in availability.end_time and availability.end_time.count(':') == 2 else datetime.strptime(availability.end_time, '%H:%M').time()
+            values.append(end_time)
             param_count += 1
             
         if availability.is_available is not None:

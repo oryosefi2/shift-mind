@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --no-cache-dir fastapi uvicorn numpy pandas scikit-learn python-dotenv asyncpg pydantic python-dateutil
+
+# Copy source code
+COPY src/ ./src/
+
+# Expose port
+EXPOSE 8085
+
+# Set Python path
+ENV PYTHONPATH=/app/src
+
+# Run the server
+CMD ["python", "src/server.py"]

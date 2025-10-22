@@ -114,6 +114,26 @@ services:
       - db
       - rest
 
+  # AI Service for demand forecasting
+  ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8085:8085"
+    volumes:
+      - ./ai:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=postgres
+    depends_on:
+      - db
+
   # Our React App
   app:
     build:

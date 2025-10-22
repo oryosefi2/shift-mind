@@ -46,6 +46,8 @@ export function Schedule() {
   const [currentWeek, setCurrentWeek] = useState('');
   const [weeklyBudget, setWeeklyBudget] = useState(5000);
   const [minStaffPerHour, setMinStaffPerHour] = useState(1);
+  const [forecastData, setForecastData] = useState<any>(null);
+  const [forecastLoading, setForecastLoading] = useState(false);
 
   // Initialize current week
   useEffect(() => {
@@ -105,6 +107,53 @@ export function Schedule() {
       showError(`שגיאה ביצירת סידור: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generateForecast = async () => {
+    if (!businessId || !currentWeek) {
+      showError('נדרש מזהה עסק ושבוע לחישוב תחזית');
+      return;
+    }
+
+    setForecastLoading(true);
+    
+    try {
+      // המרה מפורמט 2025-W43 ל-2025-43
+      const formattedWeek = currentWeek.replace('W', '');
+      
+      const response = await fetch(
+        `${API_BASE_URL}/api/forecast/${formattedWeek}/generate?business_id=${businessId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            lookback_weeks: 8
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (result.success) {
+          setForecastData(result.data);
+          success(`תחזית נוצרה בהצלחה לשבוע ${currentWeek}: ${result.data.forecast_summary.total_forecasts} רשומות`);
+        } else {
+          throw new Error(result.error?.message || 'שגיאה ביצירת תחזית');
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `שגיאה ${response.status}: ${response.statusText}`);
+      }
+      
+    } catch (error) {
+      console.error('Error generating forecast:', error);
+      showError(`שגיאה ביצירת תחזית: ${error instanceof Error ? error.message : 'שגיאה לא ידועה'}`);
+    } finally {
+      setForecastLoading(false);
     }
   };
 
@@ -213,20 +262,83 @@ export function Schedule() {
               />
             </div>
             
-            <div className="flex items-end">
+            <div>
+              {/* כפתור יצירת תחזית */}
+              <button
+                onClick={generateForecast}
+                disabled={forecastLoading}
+                className={`w-full px-4 py-2 mb-2 rounded-md font-medium transition-colors ${
+                  forecastLoading
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+              >
+                {forecastLoading ? 'מחשב תחזית...' : 'צור תחזית ביקוש'}
+              </button>
+              
+              {/* כפתור יצירת סידור */}
               <button
                 onClick={generateSchedule}
                 disabled={loading}
                 className={`w-full px-4 py-2 rounded-md font-medium transition-colors ${
                   loading
                     ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    : forecastData 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                      : 'bg-gray-500 text-white hover:bg-gray-600'
                 }`}
               >
-                {loading ? 'מייצר...' : 'צור סידור'}
+                {loading 
+                  ? 'מייצר סידור...' 
+                  : forecastData 
+                    ? 'צור סידור עבודה מבוסס תחזית' 
+                    : 'צור סידור עבודה בסיסי'
+                }
               </button>
             </div>
           </div>
+          
+          {/* הודעה מעודדת ליצירת תחזית */}
+          {!forecastData && (
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div className="flex items-start">
+                <span className="text-yellow-600 text-lg mr-2">💡</span>
+                <div>
+                  <p className="text-sm text-yellow-800 font-medium">
+                    מומלץ ליצור תחזית ביקוש תחילה
+                  </p>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    התחזית תעזור ליצור סידור עבודה מיטבי המבוסס על צרכי הביקוש הצפויים
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* אזור מידע על תחזית */}
+          {forecastData && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+              <h4 className="text-md font-medium text-green-800 mb-2">📊 תחזית ביקוש</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-green-600">שבוע:</span>
+                  <div className="font-medium">{forecastData.forecast_summary?.target_week}</div>
+                </div>
+                <div>
+                  <span className="text-green-600">תחזיות:</span>
+                  <div className="font-medium">{forecastData.forecast_summary?.total_forecasts}</div>
+                </div>
+                <div>
+                  <span className="text-green-600">ביטחון ממוצע:</span>
+                  <div className="font-medium">{(forecastData.forecast_summary?.average_confidence * 100)?.toFixed(1)}%</div>
+                </div>
+                <div>
+                  <span className="text-green-600">ביקוש שבועי:</span>
+                  <div className="font-medium">{forecastData.forecast_summary?.summary?.total_weekly_demand?.toFixed(0)}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {scheduleData && (

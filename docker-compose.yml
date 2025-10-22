@@ -36,6 +36,24 @@ services:
     networks:
       - shiftmind-network
 
+  ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8085:8085"
+    volumes:
+      - ./ai:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=host.docker.internal
+      - DB_PORT=54322
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=postgres
+    networks:
+      - shiftmind-network
+
 networks:
   shiftmind-network:
     driver: bridge

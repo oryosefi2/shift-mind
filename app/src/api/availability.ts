@@ -84,7 +84,7 @@ export const availabilityApi = {
   },
 
   async update(id: string, data: AvailabilityUpdatePayload): Promise<Availability> {
-    return apiClient.patch<Availability>(`/availability/${id}`, data);
+    return apiClient.put<Availability>(`/availability/${id}`, data);
   },
 
   async remove(id: string): Promise<void> {
