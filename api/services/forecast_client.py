@@ -8,6 +8,7 @@ Forecast Client Module
 
 import httpx
 import logging
+import os
 from typing import Dict, Optional, List, Tuple
 from datetime import datetime
 import asyncio
@@ -17,7 +18,9 @@ logger = logging.getLogger(__name__)
 class ForecastClient:
     """קליינט לשירות תחזיות AI"""
     
-    def __init__(self, ai_service_url: str = "http://localhost:8085", timeout: int = 30):
+    def __init__(self, ai_service_url: str = None, timeout: int = 30):
+        if ai_service_url is None:
+            ai_service_url = os.getenv("AI_SERVICE_URL", "http://localhost:8085")
         self.ai_service_url = ai_service_url.rstrip('/')
         self.timeout = timeout
         
