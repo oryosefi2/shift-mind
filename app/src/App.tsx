@@ -3,14 +3,13 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/AuthGuard";
 import { LoginPage } from "./components/LoginPage";
-import { Home } from "./components/Home";
 import { ToastProvider } from "./components/Toast";
 import BusinessSettings from "./pages/BusinessSettings";
-import Employees from "./pages/Employees";
+import Employees from "./pages/EmployeesNew";
 import Availability from "./pages/Availability";
 import Budgets from "./pages/Budgets";
-import { Schedule } from "./pages/Schedule";
-import { SeasonalProfiles } from "./pages/SeasonalProfiles";
+import HomePage from "./pages/HomePage";
+import ScheduleBoardNew from "./pages/ScheduleBoardNew";
 
 function App() {
   return (
@@ -23,17 +22,17 @@ function App() {
               path="/" 
               element={
                 <AuthGuard>
-                  <Home />
+                  <HomePage />
                 </AuthGuard>
-              } 
+              }
             />
             <Route 
-              path="/settings/business" 
+              path="/schedule" 
               element={
                 <AuthGuard>
-                  <BusinessSettings />
+                  <ScheduleBoardNew />
                 </AuthGuard>
-              } 
+              }
             />
             <Route 
               path="/employees" 
@@ -41,7 +40,7 @@ function App() {
                 <AuthGuard>
                   <Employees />
                 </AuthGuard>
-              } 
+              }
             />
             <Route 
               path="/availability" 
@@ -49,7 +48,7 @@ function App() {
                 <AuthGuard>
                   <Availability />
                 </AuthGuard>
-              } 
+              }
             />
             <Route 
               path="/budgets" 
@@ -57,29 +56,29 @@ function App() {
                 <AuthGuard>
                   <Budgets />
                 </AuthGuard>
-              } 
+              }
             />
             <Route 
-              path="/schedule" 
+              path="/employees/new" 
               element={
                 <AuthGuard>
-                  <Schedule />
+                  <Employees />
                 </AuthGuard>
-              } 
+              }
             />
             <Route 
-              path="/seasonal-profiles" 
+              path="/settings/business" 
               element={
                 <AuthGuard>
-                  <SeasonalProfiles />
+                  <BusinessSettings />
                 </AuthGuard>
-              } 
+              }
             />
             <Route 
               path="*" 
               element={
                 <AuthGuard>
-                  <Home />
+                  <HomePage />
                 </AuthGuard>
               } 
             />

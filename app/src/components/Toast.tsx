@@ -79,7 +79,7 @@ export function useToast() {
 
 function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: string) => void }) {
   return (
-    <div className="fixed top-4 left-4 z-50 space-y-2">
+    <div className="fixed top-4 right-4 z-50 space-y-3" dir="rtl">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
@@ -91,11 +91,11 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
   const getToastStyles = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
+        return 'toast-success';
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'toast-error';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return 'toast-warning';
       case 'info':
         return 'bg-blue-50 border-blue-200 text-blue-800';
       default:
@@ -106,13 +106,13 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
   const getIcon = () => {
     switch (toast.type) {
       case 'success':
-        return '✓';
+        return '✅';
       case 'error':
-        return '✕';
+        return '❌';
       case 'warning':
-        return '⚠';
+        return '⚠️';
       case 'info':
-        return 'ℹ';
+        return 'ℹ️';
       default:
         return '';
     }
@@ -120,19 +120,23 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
   return (
     <div
-      className={`flex items-center justify-between p-4 border rounded-lg shadow-lg max-w-sm animate-slide-in ${getToastStyles()}`}
-      dir="rtl"
+      className={`toast ${getToastStyles()} animate-slide-in-right`}
     >
-      <div className="flex items-center space-x-2">
-        <span className="text-lg">{getIcon()}</span>
-        <span className="text-sm font-medium">{toast.message}</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-reverse space-x-3">
+          <span className="text-lg animate-scale-in">
+            {getIcon()}
+          </span>
+          <span className="text-sm font-medium text-gray-900">{toast.message}</span>
+        </div>
+        <button
+          onClick={() => onRemove(toast.id)}
+          className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none mr-2 hover:bg-white/50 rounded-full w-6 h-6 flex items-center justify-center transition-all duration-200 focus:ring-2 focus:ring-gray-200 hover:scale-110"
+          title="סגור"
+        >
+          ×
+        </button>
       </div>
-      <button
-        onClick={() => onRemove(toast.id)}
-        className="text-gray-400 hover:text-gray-600 text-lg font-bold leading-none"
-      >
-        ×
-      </button>
     </div>
   );
 }

@@ -1,17 +1,13 @@
-// Copilot: employees list + modal form (create/edit) in RTL.
-// Table columns: first_name, last_name, email, hourly_rate, role, actions.
-// Zod validation; search by name/email; pagination; delete with confirm; toasts.
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../contexts/AuthContext';
 import { employeeApi, Employee, EmployeeCreatePayload, EmployeeUpdatePayload } from '../api/employees';
-import { DataTable, Column } from '../components/DataTable';
-import { FormField } from '../components/FormField';
-import { JsonField } from '../components/JsonField';
 import { useToast } from '../components/Toast';
+import { PageHeader } from '../components/ui/PageHeader';
+import { DataCard } from '../components/ui/DataCard';
+import { Modal } from '../components/ui/Modal';
 
 const employeeSchema = z.object({
   first_name: z.string()

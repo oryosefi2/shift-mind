@@ -7,9 +7,9 @@ interface LayoutProps {
 
 function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
+      <main>
         {children}
       </main>
     </div>
