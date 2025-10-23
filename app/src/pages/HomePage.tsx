@@ -136,8 +136,8 @@ function HomePage() {
           </a>
         </div>
 
-        {/* Main Feature Cards - Clean 2x2 Grid */}
-        <div className="grid md:grid-cols-2 gap-6">
+        {/* Main Feature Cards - 3x3 Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Employees Card */}
           <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300 group ${
             isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
@@ -231,6 +231,102 @@ function HomePage() {
               className="inline-flex items-center text-gray-600 hover:text-gray-700 font-medium text-sm transition-colors"
             >
               פתח הגדרות ←
+            </a>
+          </div>
+
+          {/* Seasonal Profiles Card */}
+          <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300 group ${
+            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`} style={{ transitionDelay: '500ms' }}>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <span className="text-purple-600 text-xl">🌸</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">פרופילים עונתיים</h3>
+                <p className="text-sm text-gray-600">2 פרופילים פעילים</p>
+              </div>
+            </div>
+            <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+              הגדרת דפוסי ביקוש עונתיים, חגים ואירועים מיוחדים
+            </p>
+            <a 
+              href="/settings/seasonal"
+              className="inline-flex items-center text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors"
+            >
+              ניהול עונתיות ←
+            </a>
+          </div>
+
+          {/* AI Forecast Card */}
+          <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300 group ${
+            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`} style={{ transitionDelay: '600ms' }}>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <span className="text-cyan-600 text-xl">🤖</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">תחזיות AI</h3>
+                <p className="text-sm text-gray-600">רמת ביטחון 94%</p>
+              </div>
+            </div>
+            <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+              תחזיות ביקוש חכמות על בסיס בינה מלאכותית ונתונים היסטוריים
+            </p>
+            <a 
+              href="/ai-forecast"
+              className="inline-flex items-center text-cyan-600 hover:text-cyan-700 font-medium text-sm transition-colors"
+            >
+              צפה בתחזיות ←
+            </a>
+          </div>
+
+          {/* Automations Card */}
+          <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300 group ${
+            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`} style={{ transitionDelay: '700ms' }}>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <span className="text-indigo-600 text-xl">⚡</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">אוטומציות</h3>
+                <p className="text-sm text-gray-600">3 משימות פעילות</p>
+              </div>
+            </div>
+            <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+              ניהול משימות אוטומטיות, תזמון ומעקב אחר ביצוע
+            </p>
+            <a 
+              href="/automations"
+              className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium text-sm transition-colors"
+            >
+              ניהול אוטומציות ←
+            </a>
+          </div>
+
+          {/* Import Data Card */}
+          <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300 group ${
+            isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+          }`} style={{ transitionDelay: '800ms' }}>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <span className="text-emerald-600 text-xl">📊</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">יבוא נתונים</h3>
+                <p className="text-sm text-gray-600">5 יבואים השבוע</p>
+              </div>
+            </div>
+            <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+              יבוא עובדים, זמינות וסידורי עבודה מקבצי CSV ו-Excel
+            </p>
+            <a 
+              href="/import"
+              className="inline-flex items-center text-emerald-600 hover:text-emerald-700 font-medium text-sm transition-colors"
+            >
+              התחל יבוא ←
             </a>
           </div>
         </div>

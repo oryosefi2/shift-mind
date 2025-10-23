@@ -5,13 +5,6 @@ interface PageHeaderProps {
   addButtonText?: string;
 }
 
-interface PageHeaderProps {
-  title: string;
-  description?: string;
-  onAddNew?: () => void;
-  addButtonText?: string;
-}
-
 export function PageHeader({ title, description, onAddNew, addButtonText = "הוסף חדש" }: PageHeaderProps) {
   return (
     <div className="page-header animate-fade-in">

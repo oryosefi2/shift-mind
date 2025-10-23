@@ -10,6 +10,10 @@ import Availability from "./pages/Availability";
 import Budgets from "./pages/Budgets";
 import HomePage from "./pages/HomePage";
 import ScheduleBoard from "./pages/ScheduleBoard";
+import SeasonalProfiles from "./pages/SeasonalProfiles";
+import AIForecast from "./pages/AIForecast";
+import Automations from "./pages/Automations";
+import ImportPage from "./pages/ImportPage";
 
 function App() {
   return (
@@ -71,6 +75,38 @@ function App() {
               element={
                 <AuthGuard>
                   <BusinessSettings />
+                </AuthGuard>
+              }
+            />
+            <Route 
+              path="/settings/seasonal" 
+              element={
+                <AuthGuard>
+                  <SeasonalProfiles />
+                </AuthGuard>
+              }
+            />
+            <Route 
+              path="/ai-forecast" 
+              element={
+                <AuthGuard>
+                  <AIForecast />
+                </AuthGuard>
+              }
+            />
+            <Route 
+              path="/automations" 
+              element={
+                <AuthGuard>
+                  <Automations />
+                </AuthGuard>
+              }
+            />
+            <Route 
+              path="/import" 
+              element={
+                <AuthGuard>
+                  <ImportPage />
                 </AuthGuard>
               }
             />

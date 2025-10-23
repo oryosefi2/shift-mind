@@ -299,6 +299,17 @@ function Employees() {
         addButtonText="הוסף עובד חדש"
       />
 
+      {/* Quick Import Button */}
+      <div className="mb-6">
+        <a 
+          href="/import"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-colors"
+        >
+          <span className="text-lg">📊</span>
+          יבוא עובדים מקובץ CSV/Excel
+        </a>
+      </div>
+
       <DataCard
         data={employees}
         columns={columns}

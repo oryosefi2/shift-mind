@@ -1,11 +1,3 @@
-interface ModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-  maxWidth?: string;
-}
-
 import { useEffect } from 'react';
 
 interface ModalProps {
@@ -38,7 +30,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = "max-w-2xl"
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto animate-fade-in" dir="rtl">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto animate-fade-in" dir="rtl">
       {/* Backdrop */}
       <div 
         className="modal-overlay"
@@ -47,7 +39,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = "max-w-2xl"
       
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className={`modal-content ${maxWidth} animate-scale-in`}>
+        <div className={`modal-content ${maxWidth} animate-scale-in relative z-[10000]`}>
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <h2 className="text-xl font-semibold text-gray-900">
