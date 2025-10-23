@@ -5,11 +5,11 @@ import { AuthGuard } from "./components/AuthGuard";
 import { LoginPage } from "./components/LoginPage";
 import { ToastProvider } from "./components/Toast";
 import BusinessSettings from "./pages/BusinessSettings";
-import Employees from "./pages/EmployeesNew";
+import Employees from "./pages/Employees";
 import Availability from "./pages/Availability";
 import Budgets from "./pages/Budgets";
 import HomePage from "./pages/HomePage";
-import ScheduleBoardNew from "./pages/ScheduleBoardNew";
+import ScheduleBoard from "./pages/ScheduleBoard";
 
 function App() {
   return (
@@ -30,7 +30,7 @@ function App() {
               path="/schedule" 
               element={
                 <AuthGuard>
-                  <ScheduleBoardNew />
+                  <ScheduleBoard />
                 </AuthGuard>
               }
             />

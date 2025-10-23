@@ -1,381 +1,253 @@
-// Copilot: Seasonal Profiles CRUD page with MultiHourMultiplier component
-import React, { useState, useEffect, useCallback } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from 'react';
+import { PageHeader } from '../components/ui/PageHeader';
+import { DataCard } from '../components/ui/DataCard';
+import { Modal } from '../components/ui/Modal';
+import { Slider } from '../components/ui/Slider';
+import { Sparkline } from '../components/ui/Sparkline';
 import { useToast } from '../components/Toast';
-import { seasonalProfilesApi, SeasonalProfile, CreateSeasonalProfileData, UpdateSeasonalProfileData } from '../api/calendar';
-import { DataTable } from '../components/DataTable';
-import { MultiHourMultiplier } from '../components/MultiHourMultiplier';
-import { FormField } from '../components/FormField';
 
-// Zod validation schema
-const seasonalProfileSchema = z.object({
-  name: z.string().min(1, 'שם פרופיל חובה'),
-  profile_type: z.enum(['weekly', 'monthly', 'seasonal', 'holiday']),
-  multiplier_data: z.record(z.string(), z.number().min(0).max(10)),
-  is_active: z.boolean().optional(),
-  priority: z.number().int().min(1).max(100).optional()
-});
+interface SeasonalProfile {
+  id: string;
+  name: string;
+  type: 'weekly' | 'holiday';
+  priority: number;
+  multipliers: number[];
+  created_at: string;
+}
 
-type FormData = z.infer<typeof seasonalProfileSchema>;
-
-const profileTypeOptions = [
-  { value: 'weekly', label: 'שבועי' },
-  { value: 'monthly', label: 'חודשי' },
-  { value: 'seasonal', label: 'עונתי' },
-  { value: 'holiday', label: 'חגים' }
-];
-
-export const SeasonalProfiles: React.FC = () => {
-  const { businessId, session, user, signIn } = useAuth();
-  const { success, error } = useToast();
-  const [profiles, setProfiles] = useState<SeasonalProfile[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-
-  // Debug: Check auth state
-  console.log('businessId:', businessId, 'user:', user?.email);
-
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting }
-  } = useForm<FormData>({
-    resolver: zodResolver(seasonalProfileSchema),
-    defaultValues: {
-      name: '',
-      profile_type: 'weekly',
-      multiplier_data: {},
-      is_active: true,
-      priority: 1
+function SeasonalProfiles() {
+  const [profiles, setProfiles] = useState<SeasonalProfile[]>([
+    {
+      id: '1',
+      name: 'פרופיל שגרתי',
+      type: 'weekly',
+      priority: 1,
+      multipliers: Array.from({ length: 24 }, () => 1.0),
+      created_at: '2025-01-01'
     }
+  ]);
+  
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<SeasonalProfile | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    type: 'weekly' as 'weekly' | 'holiday',
+    priority: 1,
+    multipliers: Array.from({ length: 24 }, () => 1.0)
   });
 
-    const loadProfiles = useCallback(async () => {
-    if (!businessId) {
-      console.log('No businessId available, skipping load');
-      setProfiles([]);
-      return;
-    }
-    
-    console.log('Loading profiles for businessId:', businessId);
-    setLoading(true);
-    try {
-      const data = await seasonalProfilesApi.getAll(businessId);
-      console.log('Loaded profiles:', data);
-      setProfiles(Array.isArray(data) ? data : []); // Ensure array
-    } catch (err) {
-      console.error('שגיאה בטעינת פרופילים עונתיים:', err);
-      error('שגיאה בטעינת נתונים');
-      setProfiles([]); // Set empty array on error to prevent undefined issues
-    } finally {
-      setLoading(false);
-    }
-  }, [businessId, error]);
+  const { success } = useToast();
 
-  useEffect(() => {
-    loadProfiles();
-  }, [businessId]);
-
-  // Demo: Auto-login if no user
-  useEffect(() => {
-    if (!session && !user) {
-      console.log('Auto-signing in for demo...');
-      signIn('demo@example.com').catch(err => 
-        console.error('Auto sign-in failed:', err)
-      );
-    }
-  }, [session, user, signIn]);
-
-  const onSubmit = async (data: FormData) => {
-    if (!businessId) return;
-
-    try {
-      if (editingId) {
-        // Update existing profile
-        await seasonalProfilesApi.update(editingId, data as UpdateSeasonalProfileData);
-        success('פרופיל עונתיות עודכן בהצלחה');
-      } else {
-        // Create new profile
-        await seasonalProfilesApi.create(businessId, data as CreateSeasonalProfileData);
-        success('פרופיל עונתיות נוצר בהצלחה');
-      }
-      
-      await loadProfiles();
-      resetForm();
-    } catch (err) {
-      error(editingId ? 'שגיאה בעדכון פרופיל עונתיות' : 'שגיאה ביצירת פרופיל עונתיות');
-      console.error('Error saving seasonal profile:', err);
-    }
+  const handleAddNew = () => {
+    setEditingProfile(null);
+    setFormData({
+      name: '',
+      type: 'weekly',
+      priority: 1,
+      multipliers: Array.from({ length: 24 }, () => 1.0)
+    });
+    setModalOpen(true);
   };
 
   const handleEdit = (profile: SeasonalProfile) => {
-    reset({
+    setEditingProfile(profile);
+    setFormData({
       name: profile.name,
-      profile_type: profile.profile_type as any,
-      multiplier_data: profile.multiplier_data,
-      is_active: profile.is_active,
-      priority: profile.priority
+      type: profile.type,
+      priority: profile.priority,
+      multipliers: [...profile.multipliers]
     });
-    setEditingId(profile.id);
-    setShowForm(true);
+    setModalOpen(true);
   };
 
-  const handleDelete = async (profile: SeasonalProfile) => {
-    if (!confirm('האם אתה בטוח שברצונך למחוק פרופיל עונתיות זה?')) return;
+  const handleSave = () => {
+    const newProfile: SeasonalProfile = {
+      id: editingProfile?.id || Math.random().toString(),
+      ...formData,
+      created_at: editingProfile?.created_at || new Date().toISOString()
+    };
 
-    try {
-      await seasonalProfilesApi.delete(profile.id);
-      success('פרופיל עונתיות נמחק בהצלחה');
-      await loadProfiles();
-    } catch (err) {
-      error('שגיאה במחיקת פרופיל עונתיות');
-      console.error('Error deleting seasonal profile:', err);
+    if (editingProfile) {
+      setProfiles(profiles.map(p => p.id === editingProfile.id ? newProfile : p));
+      success('פרופיל עונתי עודכן בהצלחה');
+    } else {
+      setProfiles([...profiles, newProfile]);
+      success('פרופיל עונתי נוסף בהצלחה');
+    }
+
+    setModalOpen(false);
+  };
+
+  const handleDelete = (profile: SeasonalProfile) => {
+    if (confirm(`האם אתה בטוח שברצונך למחוק את "${profile.name}"?`)) {
+      setProfiles(profiles.filter(p => p.id !== profile.id));
+      success('פרופיל עונתי נמחק בהצלחה');
     }
   };
 
-  const resetForm = () => {
-    reset({
-      name: '',
-      profile_type: 'weekly',
-      multiplier_data: {},
-      is_active: true,
-      priority: 1
-    });
-    setEditingId(null);
-    setShowForm(false);
+  const handleMultiplierChange = (hour: number, value: number) => {
+    const newMultipliers = [...formData.multipliers];
+    newMultipliers[hour] = value;
+    setFormData({ ...formData, multipliers: newMultipliers });
+  };
+
+  const resetToUniform = () => {
+    setFormData({ ...formData, multipliers: Array.from({ length: 24 }, () => 1.0) });
+  };
+
+  const getSliderColor = (value: number): 'blue' | 'orange' | 'green' => {
+    if (value < 0.8) return 'blue';
+    if (value > 1.5) return 'orange';
+    return 'green';
   };
 
   const columns = [
     {
-      key: 'name',
-      header: 'שם פרופיל',
-      render: (_value: any, profile: SeasonalProfile) => (
-        <div className="text-right">
-          <div className="font-medium">{profile.name}</div>
-          <div className="text-sm text-gray-500">
-            {profileTypeOptions.find(opt => opt.value === profile.profile_type)?.label}
-          </div>
-        </div>
-      )
+      key: 'name' as keyof SeasonalProfile,
+      label: 'שם הפרופיל',
     },
     {
-      key: 'multiplier_preview',
-      header: 'תצוגה מקדימה',
-      render: (_value: any, profile: SeasonalProfile) => {
-        if (!profile || !profile.multiplier_data) {
-          return <div className="text-sm text-gray-400 text-right">לא זמין</div>;
-        }
-        
-        const values = Object.values(profile.multiplier_data);
-        
-        if (values.length === 0) {
-          return <div className="text-sm text-gray-400 text-right">לא הוגדרו מכפילים</div>;
-        }
-        
-        const avg = values.reduce((a, b) => a + b, 0) / values.length;
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        
-        return (
-          <div className="text-sm text-right">
-            <div>ממוצע: {avg.toFixed(2)}</div>
-            <div className="text-gray-500">טווח: {min.toFixed(1)} - {max.toFixed(1)}</div>
-          </div>
-        );
+      key: 'type' as keyof SeasonalProfile,
+      label: 'סוג',
+      render: (value: string) => value === 'weekly' ? 'שבועי' : 'חג/אירוע',
+    },
+    {
+      key: 'priority' as keyof SeasonalProfile,
+      label: 'עדיפות',
+    },
+    {
+      key: 'multipliers' as keyof SeasonalProfile,
+      label: 'טווח מכפילים',
+      render: (multipliers: number[]) => {
+        const min = Math.min(...multipliers).toFixed(1);
+        const max = Math.max(...multipliers).toFixed(1);
+        return `${min} - ${max}`;
       }
     },
-    {
-      key: 'priority',
-      header: 'עדיפות',
-      render: (_value: any, profile: SeasonalProfile) => (
-        <span className={`px-2 py-1 text-xs rounded-full ${
-          profile.priority <= 3 ? 'bg-red-100 text-red-800' :
-          profile.priority <= 7 ? 'bg-yellow-100 text-yellow-800' :
-          'bg-green-100 text-green-800'
-        }`}>
-          {profile.priority}
-        </span>
-      )
-    },
-    {
-      key: 'is_active',
-      header: 'פעיל',
-      render: (_value: any, profile: SeasonalProfile) => (
-        <span className={`px-2 py-1 text-xs rounded-full ${
-          profile.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-        }`}>
-          {profile.is_active ? 'פעיל' : 'לא פעיל'}
-        </span>
-      )
-    }
   ];
 
-  if (!businessId) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">נדרש לבחור עסק</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">פרופילי עונתיות</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-        >
-          <span>+</span>
-          פרופיל חדש
-        </button>
-      </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" dir="rtl">
+      <PageHeader
+        title="פרופילים עונתיים ואירועים"
+        description="ניהול דפוסי ביקוש עונתיים וימי חג מיוחדים"
+        onAddNew={handleAddNew}
+        addButtonText="פרופיל חדש"
+      />
 
-      {/* Form */}
-      {showForm && (
-        <div className="bg-white p-6 rounded-lg shadow-md border">
-          <h2 className="text-lg font-semibold mb-4">
-            {editingId ? 'עריכת פרופיל עונתיות' : 'פרופיל עונתיות חדש'}
-          </h2>
-          
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                label="שם פרופיל"
-                error={errors.name?.message}
-                required
-              >
-                <Controller
-                  name="name"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      {...field}
-                      type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="הזן שם פרופיל"
-                    />
-                  )}
-                />
-              </FormField>
+      <DataCard
+        data={profiles}
+        columns={columns}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        searchPlaceholder="חיפוש פרופילים..."
+      />
 
-              <FormField
-                label="סוג פרופיל"
-                error={errors.profile_type?.message}
-                required
-              >
-                <Controller
-                  name="profile_type"
-                  control={control}
-                  render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {profileTypeOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                />
-              </FormField>
-
-              <FormField
-                label="עדיפות"
-                error={errors.priority?.message}
-              >
-                <Controller
-                  name="priority"
-                  control={control}
-                  render={({ field }) => (
-                    <input
-                      {...field}
-                      type="number"
-                      min="1"
-                      max="100"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  )}
-                />
-              </FormField>
-
-              <div className="flex items-center">
-                <Controller
-                  name="is_active"
-                  control={control}
-                  render={({ field }) => (
-                    <label className="flex items-center space-x-2 space-x-reverse">
-                      <input
-                        type="checkbox"
-                        checked={field.value}
-                        onChange={field.onChange}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span>פרופיל פעיל</span>
-                    </label>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Multiplier Data */}
-            <FormField
-              label="מכפילי ביקוש לפי שעות"
-              error={errors.multiplier_data?.message?.toString()}
-            >
-              <Controller
-                name="multiplier_data"
-                control={control}
-                render={({ field }) => (
-                  <MultiHourMultiplier
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={isSubmitting}
-                  />
-                )}
+      {/* Profile Form Modal */}
+      <Modal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingProfile ? 'עריכת פרופיל עונתי' : 'פרופיל עונתי חדש'}
+        maxWidth="max-w-6xl"
+      >
+        <div className="space-y-6">
+          {/* Basic Info */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                שם הפרופיל *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="למשל: פרופיל חגים"
               />
-            </FormField>
+            </div>
 
-            <div className="flex gap-3 pt-4 border-t">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                סוג פרופיל *
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'weekly' | 'holiday' })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                {isSubmitting ? 'שומר...' : editingId ? 'עדכן פרופיל' : 'צור פרופיל'}
-              </button>
-              
+                <option value="weekly">שבועי</option>
+                <option value="holiday">חג/אירוע</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                עדיפות *
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Live Preview */}
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">תצוגה מקדימה חיה</h3>
               <button
-                type="button"
-                onClick={resetForm}
-                disabled={isSubmitting}
-                className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 disabled:opacity-50"
+                onClick={resetToUniform}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
               >
-                ביטול
+                החזר לערך אחיד (1.0)
               </button>
             </div>
-          </form>
-        </div>
-      )}
+            <Sparkline data={formData.multipliers} color="#3b82f6" />
+          </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow-md">
-        <DataTable
-          data={profiles}
-          columns={columns}
-          loading={loading}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          emptyMessage="אין פרופילי עונתיות"
-        />
-      </div>
+          {/* Hour Sliders */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">מכפילי ביקוש לפי שעות (00-23)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+              {formData.multipliers.map((multiplier, hour) => (
+                <Slider
+                  key={hour}
+                  label={`${String(hour).padStart(2, '0')}:00`}
+                  value={multiplier}
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  onChange={(value) => handleMultiplierChange(hour, value)}
+                  color={getSliderColor(multiplier)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+            <button
+              onClick={() => setModalOpen(false)}
+              className="px-6 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              ביטול
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!formData.name.trim()}
+              className="px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50"
+            >
+              {editingProfile ? 'עדכן פרופיל' : 'שמור פרופיל'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
-};
+}
+
+export default SeasonalProfiles;
