@@ -33,7 +33,7 @@ interface DragState {
 }
 
 function ScheduleBoard() {
-  const { success, error, warning } = useToast();
+  const { success, warning } = useToast();
   const gridRef = useRef<HTMLDivElement>(null);
 
   const [employees] = useState<Employee[]>([
@@ -71,7 +71,7 @@ function ScheduleBoard() {
     }
   ]);
 
-  const [shifts, setShifts] = useState<Shift[]>([
+  const [shifts] = useState<Shift[]>([
     {
       id: '1',
       employeeId: '1',
@@ -91,7 +91,7 @@ function ScheduleBoard() {
   ]);
 
   const [weeklyBudget] = useState(15000);
-  const [dragState, setDragState] = useState<DragState>({
+  const [dragState] = useState<DragState>({
     isDragging: false,
     draggedShift: null,
     dragOffset: { x: 0, y: 0 }
@@ -192,7 +192,7 @@ function ScheduleBoard() {
     );
   }, [employees]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  const handleMouseMove = useCallback((_e: React.MouseEvent) => {
     // Mouse move handler
   }, []);
 
@@ -223,10 +223,6 @@ function ScheduleBoard() {
 
   const autoBalance = () => {
     success('⚖️ איזון עומסים הושלם');
-  };
-
-  const duplicateWeek = () => {
-    success('📋 השבוע שוכפל בהצלחה');
   };
 
   const optimizeSchedule = () => {
