@@ -7,12 +7,13 @@ interface AuthGuardProps {
 }
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, hydrated } = useAuth();
 
-  // Debug: Auth state
-  // console.log('AuthGuard - user:', user, 'loading:', loading);
+  console.log('🔒 AuthGuard - user:', !!user, 'loading:', loading, 'hydrated:', hydrated);
 
-  if (loading) {
+  // Wait for both loading to finish AND auth state to be hydrated from storage
+  if (loading || !hydrated) {
+    console.log('🔒 AuthGuard - Still loading or not hydrated, showing spinner');
     return (
       <div dir="rtl" className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -24,8 +25,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   }
 
   if (!user) {
+    console.log('🔒 AuthGuard - No user found, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
+  console.log('🔒 AuthGuard - User authenticated, rendering children');
   return <>{children}</>;
 };

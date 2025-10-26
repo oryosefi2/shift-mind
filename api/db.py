@@ -56,7 +56,7 @@ class Database:
         
         async with self.pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT id, name FROM businesses ORDER BY name"
+                "SELECT id::text as id, name FROM businesses ORDER BY name"
             )
             return [{"id": str(row["id"]), "name": row["name"]} for row in rows]
     
@@ -68,7 +68,7 @@ class Database:
         async with self.pool.acquire() as conn:
             rows = await conn.fetch(
                 """
-                SELECT id, first_name, last_name, email, hourly_rate 
+                SELECT id::text as id, first_name, last_name, email, hourly_rate 
                 FROM employees 
                 WHERE business_id = $1
                 ORDER BY first_name, last_name
@@ -86,6 +86,43 @@ class Database:
                 for row in rows
             ]
 
+    async def create_employee(self, business_id: str, employee_data: dict):
+        """Create a new employee"""
+        if not self.pool:
+            raise Exception("Database connection not available")
+            
+        employee_id = str(__import__('uuid').uuid4())
+        
+        async with self.pool.acquire() as conn:
+            query = """
+                INSERT INTO employees (id, business_id, first_name, last_name, email, hourly_rate, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING id, first_name, last_name, email, hourly_rate
+            """
+            now = __import__('datetime').datetime.utcnow()
+            row = await conn.fetchrow(
+                query, 
+                employee_id, 
+                business_id,
+                employee_data['first_name'],
+                employee_data['last_name'],
+                employee_data['email'],
+                employee_data['hourly_rate'],
+                now,
+                now
+            )
+            
+            if row:
+                return {
+                    "id": str(row["id"]),
+                    "first_name": row["first_name"],
+                    "last_name": row["last_name"],
+                    "email": row["email"],
+                    "hourly_rate": float(row["hourly_rate"])
+                }
+            else:
+                raise Exception("Failed to create employee")
+
     async def fetch_all(self, query: str, *args):
         """Execute a SELECT query and return all rows"""
         if not self.pool:
@@ -101,6 +138,14 @@ class Database:
             
         async with self.pool.acquire() as conn:
             return await conn.fetchrow(query, *args)
+
+    async def execute(self, query: str, *args):
+        """Execute a query without returning results (INSERT, UPDATE, DELETE)"""
+        if not self.pool:
+            raise Exception("Database connection not available")
+            
+        async with self.pool.acquire() as conn:
+            return await conn.execute(query, *args)
 
 # Global database instance
 db = Database()

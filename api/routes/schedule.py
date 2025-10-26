@@ -326,3 +326,67 @@ async def get_schedule(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"שגיאה בשליפת סידור: {str(e)}")
+
+@router.post("/schedules/approve")
+async def approve_schedule(
+    request: dict,
+    business_id: str = Query(..., description="Business ID")
+):
+    """Approve a schedule"""
+    try:
+        schedule_id = request.get('schedule_id')
+        if not schedule_id:
+            raise HTTPException(status_code=400, detail="Schedule ID is required")
+        
+        # Update schedule status to approved
+        query = """
+            UPDATE schedules 
+            SET status = 'approved', updated_at = $1
+            WHERE id = $2 AND business_id = $3
+            RETURNING id, status
+        """
+        
+        now = datetime.utcnow()
+        result = await db.fetch_one(query, now, schedule_id, business_id)
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+        
+        return {"message": "סידור אושר בהצלחה", "schedule_id": schedule_id, "status": "approved"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"שגיאה באישור סידור: {str(e)}")
+
+@router.post("/schedules/publish")
+async def publish_schedule(
+    request: dict,
+    business_id: str = Query(..., description="Business ID")
+):
+    """Publish a schedule"""
+    try:
+        schedule_id = request.get('schedule_id')
+        if not schedule_id:
+            raise HTTPException(status_code=400, detail="Schedule ID is required")
+        
+        # Update schedule status to published
+        query = """
+            UPDATE schedules 
+            SET status = 'published', updated_at = $1
+            WHERE id = $2 AND business_id = $3
+            RETURNING id, status
+        """
+        
+        now = datetime.utcnow()
+        result = await db.fetch_one(query, now, schedule_id, business_id)
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Schedule not found")
+        
+        return {"message": "סידור פורסם בהצלחה", "schedule_id": schedule_id, "status": "published"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"שגיאה בפרסום סידור: {str(e)}")

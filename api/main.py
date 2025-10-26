@@ -151,13 +151,31 @@ async def root():
     return {"message": "Welcome to ShiftMind API"}
 
 # Business endpoints
-@app.get("/businesses", response_model=List[BusinessShort])
+@app.get("/businesses", response_model=List[Business])
 async def get_businesses():
-    """Get all businesses - returns id and name only"""
+    """Get all businesses"""
     try:
-        return await db.get_businesses()
+        # Try to get from database first
+        query = "SELECT id::text as id, name, industry, timezone, created_at, updated_at FROM businesses ORDER BY created_at DESC"
+        rows = await db.fetch_all(query)
+        
+        if rows:
+            return [
+                Business(
+                    id=str(row['id']),
+                    name=row['name'],
+                    industry=row['industry'],
+                    timezone=row['timezone'],
+                    created_at=row['created_at'],
+                    updated_at=row['updated_at']
+                )
+                for row in rows
+            ]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        print(f"Database error when getting businesses: {e}")
+    
+    # Fallback to in-memory storage
+    return businesses_db
 
 # Employee endpoints
 @app.get("/employees", response_model=List[Employee])
@@ -177,29 +195,101 @@ async def get_businesses_old():
 @app.post("/businesses", response_model=Business)
 async def create_business(business: BusinessCreate):
     """Create a new business"""
-    now = datetime.utcnow()
-    new_business = Business(
-        id=str(uuid.uuid4()),
-        name=business.name,
-        industry=business.industry,
-        timezone=business.timezone,
-        created_at=now,
-        updated_at=now
-    )
-    businesses_db.append(new_business)
-    return new_business
+    business_id = str(uuid.uuid4())
+    
+    try:
+        # Insert into database
+        query = """
+            INSERT INTO businesses (id, name, industry, timezone, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id, name, industry, timezone, created_at, updated_at
+        """
+        now = datetime.utcnow()
+        row = await db.fetch_one(query, business_id, business.name, business.industry, 
+                                business.timezone, now, now)
+        
+        if row:
+            return Business(
+                id=row['id'],
+                name=row['name'],
+                industry=row['industry'],
+                timezone=row['timezone'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at']
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create business")
+            
+    except Exception as e:
+        print(f"Database error: {e}")
+        # Fallback to in-memory storage
+        now = datetime.utcnow()
+        new_business = Business(
+            id=business_id,
+            name=business.name,
+            industry=business.industry,
+            timezone=business.timezone,
+            created_at=now,
+            updated_at=now
+        )
+        businesses_db.append(new_business)
+        return new_business
 
 @app.get("/businesses/{business_id}", response_model=Business)
 async def get_business(business_id: str):
     """Get a specific business by ID"""
+    try:
+        # Try to get from database first
+        query = "SELECT id::text as id, name, industry, timezone, created_at, updated_at FROM businesses WHERE id = $1"
+        row = await db.fetch_one(query, business_id)
+        
+        if row:
+            return Business(
+                id=str(row['id']),
+                name=row['name'],
+                industry=row['industry'],
+                timezone=row['timezone'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at']
+            )
+    except Exception as e:
+        print(f"Database error when fetching business: {e}")
+    
+    # Fallback to in-memory storage
     for business in businesses_db:
         if business.id == business_id:
             return business
+    
     raise HTTPException(status_code=404, detail="Business not found")
 
 @app.put("/businesses/{business_id}", response_model=Business)
 async def update_business(business_id: str, business_update: BusinessCreate):
     """Update a business"""
+    try:
+        # Try to update in database first
+        query = """
+            UPDATE businesses 
+            SET name = $2, industry = $3, timezone = $4, updated_at = $5
+            WHERE id = $1
+            RETURNING id::text as id, name, industry, timezone, created_at, updated_at
+        """
+        now = datetime.utcnow()
+        row = await db.fetch_one(query, business_id, business_update.name, 
+                                business_update.industry, business_update.timezone, now)
+        
+        if row:
+            return Business(
+                id=str(row['id']),
+                name=row['name'],
+                industry=row['industry'],
+                timezone=row['timezone'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at']
+            )
+    except Exception as e:
+        print(f"Database error when updating business: {e}")
+    
+    # Fallback to in-memory storage
     for i, business in enumerate(businesses_db):
         if business.id == business_id:
             updated_business = Business(
@@ -212,15 +302,28 @@ async def update_business(business_id: str, business_update: BusinessCreate):
             )
             businesses_db[i] = updated_business
             return updated_business
+    
     raise HTTPException(status_code=404, detail="Business not found")
 
 @app.delete("/businesses/{business_id}")
 async def delete_business(business_id: str):
     """Delete a business"""
+    try:
+        # Try to delete from database first
+        query = "DELETE FROM businesses WHERE id = $1 RETURNING name"
+        row = await db.fetch_one(query, business_id)
+        
+        if row:
+            return {"message": f"Business '{row['name']}' deleted successfully"}
+    except Exception as e:
+        print(f"Database error when deleting business: {e}")
+    
+    # Fallback to in-memory storage
     for i, business in enumerate(businesses_db):
         if business.id == business_id:
             deleted_business = businesses_db.pop(i)
             return {"message": f"Business '{deleted_business.name}' deleted successfully"}
+    
     raise HTTPException(status_code=404, detail="Business not found")
 
 # Availability endpoints

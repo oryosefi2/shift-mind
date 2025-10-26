@@ -6,23 +6,30 @@ export class SimpleAuthProvider implements AuthProvider {
   private session: Session | null = null;
   private loading: boolean = true;
   private listeners: Set<(session: Session | null) => void> = new Set();
+  private initPromise: Promise<void>;
 
   constructor() {
-    this.initialize();
+    this.initPromise = this.initialize();
   }
 
   private async initialize(): Promise<void> {
+    console.log('[SimpleAuth] Starting initialization...');
     try {
       const storedSession = localStorage.getItem(STORAGE_KEY);
+      console.log('[SimpleAuth] Stored session:', !!storedSession);
       if (storedSession) {
         const parsedSession = JSON.parse(storedSession) as Session;
+        console.log('[SimpleAuth] Parsed session:', parsedSession);
         
         // Check if session is expired (if expires_at exists)
         if (parsedSession.expires_at && parsedSession.expires_at < Date.now()) {
+          console.log('[SimpleAuth] Session expired, clearing');
           localStorage.removeItem(STORAGE_KEY);
           this.session = null;
         } else {
+          // Skip business validation for now to debug the hydration issue
           this.session = parsedSession;
+          console.log('[SimpleAuth] Session restored successfully');
         }
       }
     } catch (error) {
@@ -31,11 +38,15 @@ export class SimpleAuthProvider implements AuthProvider {
       this.session = null;
     } finally {
       this.loading = false;
+      console.log('[SimpleAuth] Initialization complete, loading:', this.loading);
       this.notifyListeners();
     }
   }
 
   async getSession(): Promise<Session | null> {
+    // Wait for initialization to complete before returning session
+    await this.initPromise;
+    console.log('[SimpleAuth] getSession() after init, returning:', !!this.session);
     return this.session;
   }
 
@@ -44,11 +55,39 @@ export class SimpleAuthProvider implements AuthProvider {
       // Simulate OTP/Magic Link flow for demo purposes
       console.log(`[SimpleAuth] Simulating sign-in for: ${email}`);
       
-      // Create mock user with demo business_id
+      // Try to get an existing valid business, or create a new one
+      let businessId = '579bc62a-9cdf-4493-b7a6-b649d6de4491';
+      
+      try {
+        // Check if the default business exists
+        const checkResponse = await fetch(`http://localhost:8084/businesses?business_id=${businessId}`);
+        if (!checkResponse.ok || (await checkResponse.json()).length === 0) {
+          // Create a new business if the default one doesn't exist
+          const createResponse = await fetch('http://localhost:8084/businesses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: 'העסק שלי',
+              industry: 'כללי',
+              timezone: 'Asia/Jerusalem'
+            })
+          });
+          
+          if (createResponse.ok) {
+            const newBusiness = await createResponse.json();
+            businessId = newBusiness.id;
+            console.log(`[SimpleAuth] Created new business: ${businessId}`);
+          }
+        }
+      } catch (err) {
+        console.warn('[SimpleAuth] Could not verify/create business, using default ID');
+      }
+      
+      // Create mock user with business_id
       const user: User = {
         id: `user_${Date.now()}`,
         email: email,
-        business_id: '11111111-1111-1111-1111-111111111111'
+        business_id: businessId
       };
 
       // Create session (expires in 24 hours for demo)

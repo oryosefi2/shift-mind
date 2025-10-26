@@ -29,19 +29,36 @@ export interface BusinessUpdatePayload {
 
 export const businessApi = {
   async getBusiness(businessId: string): Promise<Business> {
-    const businesses = await apiClient.get<Business[]>('/businesses', { 
-      business_id: businessId 
-    });
-    
-    if (!businesses || businesses.length === 0) {
-      throw new Error('העסק לא נמצא');
+    try {
+      const businesses = await apiClient.get<Business[]>('/businesses', { 
+        business_id: businessId 
+      });
+      
+      if (!businesses || businesses.length === 0) {
+        const error = new Error('העסק לא נמצא') as any;
+        error.status = 404;
+        throw error;
+      }
+      
+      return businesses[0];
+    } catch (error: any) {
+      // If it's already an API error with status, re-throw it
+      if (error.status) {
+        throw error;
+      }
+      // Otherwise create a 404 error
+      const notFoundError = new Error('העסק לא נמצא') as any;
+      notFoundError.status = 404;
+      throw notFoundError;
     }
-    
-    return businesses[0];
+  },
+
+  async createBusiness(payload: { name: string; industry?: string; timezone: string }): Promise<Business> {
+    return apiClient.post<Business>('/businesses', payload);
   },
 
   async updateBusiness(businessId: string, payload: BusinessUpdatePayload): Promise<Business> {
-    return apiClient.patch<Business>(`/businesses/${businessId}`, payload);
+    return apiClient.put<Business>(`/businesses/${businessId}`, payload);
   },
 
   async listBusinesses(params?: { page?: number; page_size?: number }): Promise<Business[]> {

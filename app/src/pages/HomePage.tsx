@@ -2,20 +2,89 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
+import { BusinessSetupWizard } from '../components/BusinessSetupWizard';
+import { ScheduleCreator } from '../components/ScheduleCreator';
+import { businessApi } from '../api/businesses';
 
 function HomePage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
+  const [showScheduleCreator, setShowScheduleCreator] = useState(false);
+  const [businessSetupComplete, setBusinessSetupComplete] = useState(false);
+  const [checkingSetup, setCheckingSetup] = useState(true);
   const userName = "מנהל המערכת"; // This could come from user context/auth
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, businessId } = useAuth();
   const { success, error } = useToast();
 
   useEffect(() => {
     // Trigger fade-in animation after component mounts
     setIsLoaded(true);
-  }, []);
+    
+    // Check if business is fully configured
+    if (businessId) {
+      checkBusinessSetup();
+    }
+  }, [businessId]);
+
+  const checkBusinessSetup = async () => {
+    try {
+      const business = await businessApi.getBusiness(businessId!);
+      
+      // Check if business has essential setup completed
+      const isSetupComplete = business.name && 
+                             business.name !== 'בית קפה חדש' && 
+                             business.name !== 'העסק שלי' &&
+                             business.settings?.open_hours;
+      
+      setBusinessSetupComplete(isSetupComplete);
+      
+      // Show setup wizard if not complete
+      if (!isSetupComplete) {
+        setShowSetupWizard(true);
+      }
+    } catch (err: any) {
+      console.error('Business fetch error:', err);
+      
+      // If business not found (404), create a new business
+      if (err.status === 404) {
+        console.log('Business not found, creating new business...');
+        try {
+          // Create a new business
+          const newBusiness = await businessApi.createBusiness({
+            name: 'העסק שלי',
+            industry: 'כללי',
+            timezone: 'Asia/Jerusalem'
+          });
+          
+          // Update auth with new business ID
+          localStorage.setItem('shiftmind_auth_session', JSON.stringify({
+            ...JSON.parse(localStorage.getItem('shiftmind_auth_session') || '{}'),
+            user: {
+              ...JSON.parse(localStorage.getItem('shiftmind_auth_session') || '{}').user,
+              business_id: newBusiness.id
+            }
+          }));
+          
+          // Reload page to get new business ID
+          window.location.reload();
+          return;
+        } catch (createErr) {
+          console.error('Failed to create new business:', createErr);
+          await signOut();
+          return;
+        }
+      }
+      
+      // If other error, probably needs setup
+      setBusinessSetupComplete(false);
+      setShowSetupWizard(true);
+    } finally {
+      setCheckingSetup(false);
+    }
+  };
 
   useEffect(() => {
     // Handle click outside to close menu
@@ -122,18 +191,18 @@ function HomePage() {
         <div className={`mb-8 transition-all duration-1000 ${
           isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}>
-          <a
-            href="/schedule"
-            className="block bg-gradient-to-l from-green-500 to-green-600 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 group"
+          <button
+            onClick={() => setShowScheduleCreator(true)}
+            className="w-full bg-gradient-to-l from-green-500 to-green-600 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 group"
           >
             <div className="text-center">
               <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">🗓️</div>
-              <h2 className="text-2xl font-bold mb-3">צור סידור שבועי</h2>
+              <h2 className="text-2xl font-bold mb-3">צור סידור שבועי חכם</h2>
               <p className="text-green-100 text-lg font-light">
-                התחל לארגן את המשמרות השבועיות בלוח החכם
+                המערכת תיצור סידור אופטימלי לפי התקציב והזמינות
               </p>
             </div>
-          </a>
+          </button>
         </div>
 
         {/* Main Feature Cards - 3x3 Grid */}
@@ -338,6 +407,29 @@ function HomePage() {
           <p className="text-sm text-gray-500">© 2025 ShiftMind. כל הזכויות שמורות.</p>
         </div>
       </footer>
+
+      {/* Business Setup Wizard */}
+      {businessId && (
+        <BusinessSetupWizard
+          isOpen={showSetupWizard}
+          onClose={() => setShowSetupWizard(false)}
+          onComplete={() => {
+            setBusinessSetupComplete(true);
+            setShowSetupWizard(false);
+            success('העסק הוגדר בהצלחה! כעת ניתן להתחיל לעבוד');
+          }}
+          businessId={businessId}
+        />
+      )}
+
+      {/* Schedule Creator */}
+      {businessId && (
+        <ScheduleCreator
+          isOpen={showScheduleCreator}
+          onClose={() => setShowScheduleCreator(false)}
+          businessId={businessId}
+        />
+      )}
     </div>
   );
 }

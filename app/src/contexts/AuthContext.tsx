@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  hydrated: boolean; // New: indicates if auth state has been loaded from storage
   businessId: string | null;
   signIn: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -28,6 +29,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
   const [authProvider] = useState<IAuthProvider>(() => createAuthProvider());
 
   useEffect(() => {
@@ -36,16 +38,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Initialize session
     const initializeAuth = async () => {
       try {
+        console.log('🔐 AuthContext: Starting initialization...');
         const currentSession = await authProvider.getSession();
+        console.log('🔐 AuthContext: Got session:', !!currentSession, currentSession?.user?.email);
         if (mounted) {
           setSession(currentSession);
           setLoading(false);
+          setHydrated(true); // Mark as hydrated after loading from storage
+          console.log('🔐 AuthContext: Hydration complete - session:', !!currentSession);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('🔐 AuthContext: Error initializing auth:', error);
         if (mounted) {
           setSession(null);
           setLoading(false);
+          setHydrated(true); // Mark as hydrated even on error
+          console.log('🔐 AuthContext: Hydration complete - error case');
         }
       }
     };
@@ -89,6 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user: session?.user || null,
     session,
     loading,
+    hydrated,
     businessId: session?.user?.business_id || null,
     signIn,
     signOut

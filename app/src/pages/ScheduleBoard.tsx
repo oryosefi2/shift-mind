@@ -1,5 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../contexts/AuthContext';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8084';
 
 interface Employee {
   id: string;
@@ -33,8 +36,51 @@ interface DragState {
 }
 
 function ScheduleBoard() {
-  const { success, warning } = useToast();
+  const { success, warning, error } = useToast();
+  const { businessId } = useAuth();
   const gridRef = useRef<HTMLDivElement>(null);
+  const [scheduleStatus, setScheduleStatus] = useState<'draft' | 'approved' | 'published'>('draft');
+  const [isApproving, setIsApproving] = useState(false);
+  const [currentScheduleId, setCurrentScheduleId] = useState<string | null>(null);
+  
+  // Load current schedule ID when component mounts
+  useEffect(() => {
+    const loadScheduleId = async () => {
+      if (!businessId) return;
+      
+      try {
+        // Get current week in YYYY-WNN format
+        const now = new Date();
+        const year = now.getFullYear();
+        const week = getCurrentWeek();
+        const weekString = `${year}-W${week.toString().padStart(2, '0')}`;
+        
+        const response = await fetch(`${API_BASE_URL}/api/schedule/${weekString}?business_id=${businessId}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Loaded schedule data:', data);
+          setCurrentScheduleId(data.schedule_id);
+          setScheduleStatus(data.status);
+        } else {
+          console.log('No schedule found for week', weekString);
+        }
+      } catch (error) {
+        console.log('No existing schedule found');
+      }
+    };
+    
+    loadScheduleId();
+  }, [businessId]);
+  
+  // Helper function to get current week number
+  const getCurrentWeek = () => {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const pastDaysOfYear = (now.getTime() - startOfYear.getTime()) / 86400000;
+    return Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+  };
+  
+  // const currentWeek = getCurrentWeek(); // Not used currently
 
   const [employees] = useState<Employee[]>([
     {
@@ -217,6 +263,79 @@ function ScheduleBoard() {
     success('🔥 נוצר סידור שעות עומס');
   };
 
+  // Schedule approval handlers
+  const handleApproveSchedule = async () => {
+    if (!businessId) return;
+    
+    setIsApproving(true);
+    try {
+      if (!currentScheduleId) {
+        error('לא נמצא מזהה סידור. אנא צור סידור תחילה.');
+        return;
+      }
+      
+      console.log('Approving schedule with ID:', currentScheduleId, 'business:', businessId);
+      
+      const response = await fetch(`${API_BASE_URL}/api/schedules/approve?business_id=${businessId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          schedule_id: currentScheduleId
+        })
+      });
+
+      if (response.ok) {
+        setScheduleStatus('approved');
+        success('✅ הסידור אושר בהצלחה!');
+      } else {
+        error('שגיאה באישור הסידור');
+      }
+    } catch (err) {
+      error('שגיאה באישור הסידור');
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handlePublishSchedule = async () => {
+    if (!businessId) return;
+    
+    if (!currentScheduleId) {
+      error('לא נמצא מזהה סידור');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/schedules/publish?business_id=${businessId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          schedule_id: currentScheduleId
+        })
+      });
+
+      if (response.ok) {
+        setScheduleStatus('published');
+        success('📢 הסידור פורסם לעובדים!');
+      } else {
+        error('שגיאה בפרסום הסידור');
+      }
+    } catch (err) {
+      error('שגיאה בפרסום הסידור');
+    }
+  };
+
+  const getWeekStartDate = (week: number) => {
+    const now = new Date();
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const daysFromStartOfYear = (week - 1) * 7;
+    return new Date(startOfYear.getTime() + daysFromStartOfYear * 24 * 60 * 60 * 1000);
+  };
+
   const analyzeAndPredict = () => {
     success('📊 ניתוח AI הושלם');
   };
@@ -327,8 +446,19 @@ function ScheduleBoard() {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">לוח סידור משמרות חכם</h1>
-                  <p className="text-gray-600 mt-1">ניהול וסידור משמרות עם גרירה ושחרור, מעקב תקציב ובינה מלאכותית</p>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h1 className="text-2xl font-bold text-gray-900">לוח סידור משמרות חכם</h1>
+                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      scheduleStatus === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                      scheduleStatus === 'approved' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {scheduleStatus === 'draft' ? '📝 טיוטה' :
+                       scheduleStatus === 'approved' ? '✅ מאושר' :
+                       '📢 פורסם'}
+                    </div>
+                  </div>
+                  <p className="text-gray-600">ניהול וסידור משמרות עם גרירה ושחרור, מעקב תקציב ובינה מלאכותית</p>
                 </div>
                 <div className="flex items-center gap-3">
                   {!isDesktop && (
@@ -347,6 +477,32 @@ function ScheduleBoard() {
                   >
                     🎯 צור סידור שבועי
                   </button>
+                  
+                  {/* Schedule Approval Buttons */}
+                  {scheduleStatus === 'draft' && (
+                    <button
+                      onClick={handleApproveSchedule}
+                      disabled={isApproving}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isApproving ? '⏳ מאשר...' : '✅ אשר סידור'}
+                    </button>
+                  )}
+                  
+                  {scheduleStatus === 'approved' && (
+                    <button
+                      onClick={handlePublishSchedule}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 text-sm font-medium"
+                    >
+                      📢 פרסם לעובדים
+                    </button>
+                  )}
+                  
+                  {scheduleStatus === 'published' && (
+                    <div className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg flex items-center gap-2 text-sm font-medium">
+                      ✨ פורסם
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -564,6 +720,17 @@ function ScheduleBoard() {
             {dragState.isDragging && (
               <div className="fixed inset-0 pointer-events-none z-50"></div>
             )}
+            
+            {/* Debug Panel */}
+            <div className="bg-gray-50 rounded-xl shadow-sm border border-gray-200/60 p-4 mt-6 max-w-6xl mx-auto">
+              <h3 className="text-base font-medium text-gray-700 mb-3">מידע למפתחים</h3>
+              <div className="text-sm text-gray-600 space-y-1">
+                <div>Business ID: {businessId || 'לא זמין'}</div>
+                <div>Schedule ID: {currentScheduleId || 'לא נטען'}</div>
+                <div>Status: {scheduleStatus}</div>
+                <div>Is Approving: {isApproving ? 'כן' : 'לא'}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

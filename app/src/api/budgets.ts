@@ -81,10 +81,7 @@ export const budgetApi = {
   },
 
   async create(businessId: string, data: BudgetCreatePayload): Promise<Budget> {
-    return apiClient.post<Budget>('/budgets', {
-      ...data,
-      business_id: businessId,
-    });
+    return apiClient.post<Budget>(`/budgets?business_id=${businessId}`, data);
   },
 
   async getById(id: string): Promise<Budget> {
@@ -92,7 +89,7 @@ export const budgetApi = {
   },
 
   async update(id: string, data: BudgetUpdatePayload): Promise<Budget> {
-    return apiClient.patch<Budget>(`/budgets/${id}`, data);
+    return apiClient.put<Budget>(`/budgets/${id}`, data);
   },
 
   async remove(id: string): Promise<void> {
